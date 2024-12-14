@@ -147,4 +147,43 @@ final class PBXFileElementTests: XCTestCase {
             """)
         }
     }
+
+    func test_fullPath_with_variantGroup_removesDuplicateLprojSegment() throws {
+        let sourceRoot = Path("/Users/test/Project")
+
+        let localizedFile = PBXFileReference(
+            sourceTree: .group,
+            path: "Base.lproj/MainInterface.storyboard"
+        )
+        let variantGroup = PBXVariantGroup(
+            children: [localizedFile],
+            sourceTree: .group
+        )
+        let localizedGroup = PBXGroup(
+            children: [variantGroup],
+            sourceTree: .group,
+            path: "Resources/Base.lproj"
+        )
+        let mainGroup = PBXGroup(children: [localizedGroup], sourceTree: .group)
+        let project = PBXProject(
+            name: "TestProject",
+            buildConfigurationList: XCConfigurationList(),
+            compatibilityVersion: "Xcode 14.0",
+            preferredProjectObjectVersion: nil,
+            minimizedProjectReferenceProxies: nil,
+            mainGroup: mainGroup
+        )
+
+        let objects = PBXObjects(objects: [project, mainGroup, localizedGroup, variantGroup, localizedFile])
+        project.reference.objects = objects
+        mainGroup.reference.objects = objects
+        localizedGroup.reference.objects = objects
+        variantGroup.reference.objects = objects
+        localizedFile.reference.objects = objects
+
+        mainGroup.assignParentToChildren()
+
+        let fullPath = try localizedFile.fullPath(sourceRoot: sourceRoot)
+        XCTAssertEqual(fullPath?.string, "/Users/test/Project/Resources/Base.lproj/MainInterface.storyboard")
+    }
 }

@@ -187,7 +187,16 @@ public extension PBXFileElement {
             }
 
             guard let fullGroupPath: Path = groupPath else { return nil }
-            guard let filePath = self is PBXVariantGroup ? try baseVariantGroupPath() : path else { return fullGroupPath }
+            guard var filePath = self is PBXVariantGroup ? try baseVariantGroupPath() : path else { return fullGroupPath }
+
+            let groupComponents = fullGroupPath.components
+            if let lastComponent = groupComponents.last, lastComponent.hasSuffix(".lproj") {
+                let prefix = "\(lastComponent)/"
+                if filePath.hasPrefix(prefix) {
+                    filePath.removeFirst(prefix.count)
+                }
+            }
+
             return fullGroupPath + filePath
         default:
             return nil
